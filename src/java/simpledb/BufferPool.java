@@ -1,7 +1,7 @@
 package simpledb;
 
 import java.io.*;
-
+import java.util.Hashtable;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -25,7 +25,10 @@ public class BufferPool {
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
-    public int numPages;
+    //by default num pages equal to default pages. can be overridden by constructor
+    public int maxPages = DEFAULT_PAGES;
+    //Since pageID,Page combination is Unique we are using HashTable
+    public Hashtable<PageId, Page> pageId_page;
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -36,7 +39,8 @@ public class BufferPool {
         // some code goes here
     	/*if(numPages > DEFAULT_PAGES)
     		throw new DbException("Exceeds Max Page request of "+DEFAULT_PAGES);*/
-    	this.numPages = numPages;
+    	pageId_page = new Hashtable<PageId,Page>();
+    	maxPages = numPages;
     	
     }
     
@@ -72,7 +76,24 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+    	Page page = null;
+    	if(pageId_page.containsKey(pid))
+    	{
+    		page = pageId_page.get(pid);
+    	}
+    	else {
+    		if(pageId_page.size() < maxPages )
+    		{		
+    		    page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
+    		    pageId_page.put(pid, page);
+    		}
+    		else
+    		{
+    			throw new DbException("Buffer pool reached its max size of "+DEFAULT_PAGES);
+    		}
+    	}
+    	
+        return page;
     }
 
     /**
