@@ -1,6 +1,13 @@
 package simpledb;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.hamcrest.core.IsInstanceOf;
 
 /**
  * A RecordId is a reference to a specific tuple on a specific page of a
@@ -9,7 +16,9 @@ import java.io.Serializable;
 public class RecordId implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
+    Map<PageId,Integer> pageId_tno = new HashMap<PageId,Integer>();
+    public PageId pid;
+    public int tupleno;
     /**
      * Creates a new RecordId referring to the specified PageId and tuple
      * number.
@@ -21,6 +30,10 @@ public class RecordId implements Serializable {
      */
     public RecordId(PageId pid, int tupleno) {
         // some code goes here
+    	//pageId_tno.put(pid, tupleno);
+    	this.pid = pid;
+    	this.tupleno = tupleno;
+    	
     }
 
     /**
@@ -28,7 +41,8 @@ public class RecordId implements Serializable {
      */
     public int tupleno() {
         // some code goes here
-        return 0;
+    	return tupleno;
+        //return 0;
     }
 
     /**
@@ -36,7 +50,8 @@ public class RecordId implements Serializable {
      */
     public PageId getPageId() {
         // some code goes here
-        return null;
+    	return pid;
+        //return null;
     }
 
     /**
@@ -48,7 +63,20 @@ public class RecordId implements Serializable {
     @Override
     public boolean equals(Object o) {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+    	if(o != null)
+    	{	
+    	 if (o instanceof RecordId) {
+			RecordId r = (RecordId) o;
+			if((r.tupleno == this.tupleno) && (r.getPageId().equals(this.pid)))
+					{
+				      return true;
+					}
+			
+		    } 
+        }
+    	
+        //throw new UnsupportedOperationException("implement this");
+		return false;
     }
 
     /**
@@ -60,7 +88,19 @@ public class RecordId implements Serializable {
     @Override
     public int hashCode() {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+    	List<Integer> l = new ArrayList<Integer>();
+    	l.add(this.getPageId().hashCode());
+    	l.add(this.tupleno());
+    	//Computer hash code for array list
+    	return Arrays.hashCode(l.toArray());
+    	
+    	/*int a[] = new int[2];
+    	a[0] = this.getPageId().hashCode();
+    	a[1] = this.tupleno();
+    	//To convert Arrays into hashcode
+    	return Arrays.hashCode(a);*/
+    	
+        //throw new UnsupportedOperationException("implement this");
 
     }
 
