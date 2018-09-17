@@ -25,14 +25,19 @@ public class BufferPool {
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
-
+    public int numPages;
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
      * @param numPages maximum number of pages in this buffer pool.
+     * @throws DbException 
      */
-    public BufferPool(int numPages) {
+    public BufferPool(int numPages)  {
         // some code goes here
+    	/*if(numPages > DEFAULT_PAGES)
+    		throw new DbException("Exceeds Max Page request of "+DEFAULT_PAGES);*/
+    	this.numPages = numPages;
+    	
     }
     
     public static int getPageSize() {

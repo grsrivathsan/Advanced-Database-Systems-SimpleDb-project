@@ -1,8 +1,10 @@
 package simpledb;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -20,8 +22,15 @@ public class Tuple implements Serializable {
      *            the schema of this tuple. It must be a valid TupleDesc
      *            instance with at least one field.
      */
+    public List<Field> fieldList = new ArrayList<Field>();
+    public TupleDesc tdesc;
     public Tuple(TupleDesc td) {
         // some code goes here
+    	if(td.numFields() > 0)
+    	{
+    		tdesc = td;
+    		    		
+    	}
     }
 
     /**
@@ -29,16 +38,17 @@ public class Tuple implements Serializable {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        return tdesc;
     }
 
     /**
      * @return The RecordId representing the location of this tuple on disk. May
      *         be null.
      */
+    public RecordId recordID;
     public RecordId getRecordId() {
         // some code goes here
-        return null;
+        return recordID;
     }
 
     /**
@@ -49,6 +59,7 @@ public class Tuple implements Serializable {
      */
     public void setRecordId(RecordId rid) {
         // some code goes here
+    	recordID = rid;
     }
 
     /**
@@ -61,6 +72,7 @@ public class Tuple implements Serializable {
      */
     public void setField(int i, Field f) {
         // some code goes here
+    	fieldList.add(i,f);
     }
 
     /**
@@ -71,7 +83,8 @@ public class Tuple implements Serializable {
      */
     public Field getField(int i) {
         // some code goes here
-        return null;
+    	Field f = fieldList.get(i);
+        return f;
     }
 
     /**
@@ -84,7 +97,14 @@ public class Tuple implements Serializable {
      */
     public String toString() {
         // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+    	StringBuilder sb = new StringBuilder();
+    	for(int i=0;i<fieldList.size();i++)
+    	{
+    		sb.append(fieldList.get(i));
+    		sb.append("\t");
+    	}
+    	return sb.toString();
+        //throw new UnsupportedOperationException("Implement this");
     }
 
     /**
@@ -94,7 +114,8 @@ public class Tuple implements Serializable {
     public Iterator<Field> fields()
     {
         // some code goes here
-        return null;
+    	
+        return fieldList.iterator();
     }
 
     /**
@@ -103,5 +124,7 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td)
     {
         // some code goes here
+    	tdesc = td;
+    	
     }
 }
