@@ -306,7 +306,7 @@ public class HeapPage implements Page {
     	int j = i;
     	boolean used = false;
     	int hindex = j / 8;
-    	int offset = j%8;
+    	int offset = j % 8;
     	if( ((1 << offset) & (header[hindex])) != 0)
     		used = true;
         return used;    	

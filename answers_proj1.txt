@@ -1,0 +1,42 @@
+﻿CS6530 (Fall 2018) Project 1: SimpleDB Basics
+=============================================
+
+1)	Initial Steps done:
+1.1)	  Setting up of git repository
+1.2)	  Installing and setting eclipse workspace, test run of junit.
+2)	Tuple Desc:
+2.1) Create an ArrayList datastructure for TDItemsList item.
+2.2) Inside the TupleDesc constructor, iterate through all the elements in typeAr[] and fieldAr[] and create a new TDItem for each typeAr[] and fieldAr[] pair. Add the TDItem to the TDItemsList array list.   If fieldAr[] is empty, initialize with a new string entity.
+2.3) numFields() can be computed by the size of the array list TDItemsList.
+2.4) getFieldName(i) => Check whether I is a valid index. If not, throw invalid index exception. Else, iterate the list and find the matching fieldname for index i. return the fieldname.
+2.5)  getFieldType(i) => Check whether I is a valid index. If not, throw invalid index exception. Else, iterate the list and find the matching fieldType for index i. return the fieldType.
+2.6) getSize() => Compute the tuple size in bytes for a given tupledesc. Iterate the typleDesc and compute getlen() for each field type in the iteration. Cumulatively sum the number of bytes. Return the final summed size upon iteration.
+2.7) merging of two tuples: Create a new array of size : size of t1 + size of t2. 
+        Iterate t1 and assign the entities to new array.
+         Iterate t2 and append the elements to the existing new array.
+         Create a new tuple with these values in t1 and t2. Return the new merged tuple td3.
+2.8) equals() = > Initially evaluate whether the object is not null or its an instance of tupledesc. If not return false.
+         Else. Compare total numof Fields and fieldType of each attribute of both the entities. If all are same. Return true.
+3)	Tuple:
+3.1) Used String builder for toString() method to merge the strings. Used arrayList to store list of fields.
+       4)   Catalog:
+               4.1) Created ConcurrentHashMap for mapping from fileID_Name, fileID_dbFile and fileID_pKey. Created HashMap for name_FileID (Since the access is infrequent among the project functionalites compared to others).
+      5) Bufferpool:
+	  5.1) Create a Hashtable for <PageId, Page> since the combination of PageId and page of an entity is unique.
+                5.2) If the HashTable already contains the Page for the given pageId, then return the page.
+	 5.3) Else, Check if the bufferPool has reached the max size. If yes. Throw DBException stating bufferpool has reached the max capacity.
+              5.4) If bufferpool hasn’t reached max size, fetch/read via the getCatalog.getDBfile(pageId). Include the PageId and the corresponding Page to the hashtable pageId_page. Return page.
+6) HeapPageId:
+          6.1) Computing the hashCode: Include the tableId and corresponding pageNumber into an ArrayList. Compute the hashCode for the Arraylist using Arrays.hashCode(l.toArray()). Return the computed hashCode.
+7) SeqScan:
+          7.1) For each fieldName in tupledesc, appended tableAlias and returned the updated tupledesc.
+
+Challenges faced:
+1)	Merging of two tupleDesc in TupleDesc.java.  Resolved it by introducing a mergeParameter to appropriately allocate elements into the merged array;
+2)	Dealing with Null Pointer exception in object comparisons.
+3)	Determining whether a slot is empty or not and counting number of empty slots.
+4)      Implementation of Dbfile Iterator.
+
+Time Spent is around 26 hours on the whole.
+
+                 
