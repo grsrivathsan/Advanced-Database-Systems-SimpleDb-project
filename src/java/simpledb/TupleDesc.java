@@ -1,7 +1,10 @@
 package simpledb;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * TupleDesc describes the schema of a tuple.

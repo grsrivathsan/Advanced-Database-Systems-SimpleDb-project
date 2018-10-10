@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.hamcrest.core.IsInstanceOf;
-
 /**
  * A RecordId is a reference to a specific tuple on a specific page of a
  * specific table.
