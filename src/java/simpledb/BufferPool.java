@@ -204,7 +204,11 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
     	for(PageId p : pageId_page.keySet())
-    		flushPage(p);
+    	{
+    		if(pageId_page.get(p).isDirty() != null)
+    			flushPage(p);
+    	}
+    		
 
     }
 
@@ -246,35 +250,36 @@ public class BufferPool {
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized  void evictPage() throws DbException {
-    	//logic: find the dirtly pages. if only one dirty page evict that
+    	//logic: find the clean pages. if only one clean page evict that
     	//else evict the pages in fifo order using pid array list    	
         // some code goes here
         // not necessary for lab1
-    	ArrayList<PageId> dirtyPages = new ArrayList<PageId>();
+    	
+    	ArrayList<PageId> cleanPge = new ArrayList<PageId>();
     	for(PageId p : pageId_page.keySet())
     	{
-    		if(pageId_page.get(p).isDirty() != null)
-    			dirtyPages.add(p);
+    		if(pageId_page.get(p).isDirty() == null)
+    			cleanPge.add(p);
     	}
     	
-    	if(!dirtyPages.isEmpty())
+    	if(!cleanPge.isEmpty())
     	{
-    		PageId removePid = dirtyPages.get(0);
+    		PageId removePid = cleanPge.get(0);
     		//Take the first inserted element in dirtyPages array (FIFO)
     		try {
     			//for(int i = 0;i<dirtyPages.size();i++)
-				  flushPage(dirtyPages.get(0));
+				  flushPage(cleanPge.get(0));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
     		//remove the pages after flush operation
     		pageId_page.remove(removePid);
-    		dirtyPages.remove(removePid);
+    		cleanPge.remove(removePid);
     	}
     	else
     	{
-    		//If there are no dirty pages, then evict the first in clean page thats not used
+    		//If there are no clean pages, then evict the first in clean page thats not used
     		//System.out.println("no dirty pages");
     		try {
 				flushPage(pageId_fifo.get(0));
@@ -285,7 +290,10 @@ public class BufferPool {
     		
     		pageId_page.remove(pageId_fifo.get(0));
     		pageId_fifo.remove(0);
+    		
     	}
+    
+    
     }
 
 }
