@@ -1,6 +1,8 @@
 package simpledb;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
 
 /**
@@ -27,7 +29,10 @@ public class BufferPool {
     //by default num pages equal to default pages. can be overridden by constructor
     public int maxPages = DEFAULT_PAGES;
     //Since pageID,Page combination is Unique we are using HashTable
-    public Hashtable<PageId, Page> pageId_page;
+   // public Hashtable<PageId, Page> pageId_page;
+    public HashMap<PageId, Page> pageId_page;
+    
+    public ArrayList<PageId> pageId_fifo;
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -38,8 +43,11 @@ public class BufferPool {
         // some code goes here
     	/*if(numPages > DEFAULT_PAGES)
     		throw new DbException("Exceeds Max Page request of "+DEFAULT_PAGES);*/
-    	pageId_page = new Hashtable<PageId,Page>();
+    	//pageId_page = new Hashtable<PageId,Page>();
+    	pageId_page = new HashMap<PageId,Page>();
     	maxPages = numPages;
+    	//for maintaining fifo order during page eviction
+    	pageId_fifo = new ArrayList<PageId>();
     	
     }
     
@@ -76,19 +84,27 @@ public class BufferPool {
         throws TransactionAbortedException, DbException {
         // some code goes here
     	Page page = null;
+    	pageId_fifo.add(pid);
     	if(pageId_page.containsKey(pid))
     	{
     		page = pageId_page.get(pid);
+    		//pageId_fifo.add(pid);
     	}
     	else {
     		if(pageId_page.size() < maxPages )
     		{		
     		    page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
     		    pageId_page.put(pid, page);
+    		    //pageId_fifo.add(pid);
     		}
     		else
     		{
-    			throw new DbException("Buffer pool reached its max size of "+DEFAULT_PAGES);
+    			//we have to evict one page
+    			page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
+    			evictPage();
+    			pageId_page.put(pid, page);
+    		    //pageId_fifo.add(pid);
+    			//throw new DbException("Buffer pool reached its max size of "+DEFAULT_PAGES);
     		}
     	}
     	
@@ -187,6 +203,8 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
+    	for(PageId p : pageId_page.keySet())
+    		flushPage(p);
 
     }
 
@@ -210,6 +228,10 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
+    	Page p = pageId_page.get(pid);
+    	Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(p);
+    	p.markDirty(false, null);
+    	
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -224,8 +246,46 @@ public class BufferPool {
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized  void evictPage() throws DbException {
+    	//logic: find the dirtly pages. if only one dirty page evict that
+    	//else evict the pages in fifo order using pid array list    	
         // some code goes here
         // not necessary for lab1
+    	ArrayList<PageId> dirtyPages = new ArrayList<PageId>();
+    	for(PageId p : pageId_page.keySet())
+    	{
+    		if(pageId_page.get(p).isDirty() != null)
+    			dirtyPages.add(p);
+    	}
+    	
+    	if(!dirtyPages.isEmpty())
+    	{
+    		PageId removePid = dirtyPages.get(0);
+    		//Take the first inserted element in dirtyPages array (FIFO)
+    		try {
+    			//for(int i = 0;i<dirtyPages.size();i++)
+				  flushPage(dirtyPages.get(0));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    		//remove the pages after flush operation
+    		pageId_page.remove(removePid);
+    		dirtyPages.remove(removePid);
+    	}
+    	else
+    	{
+    		//If there are no dirty pages, then evict the first in clean page thats not used
+    		//System.out.println("no dirty pages");
+    		try {
+				flushPage(pageId_fifo.get(0));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    		
+    		pageId_page.remove(pageId_fifo.get(0));
+    		pageId_fifo.remove(0);
+    	}
     }
 
 }

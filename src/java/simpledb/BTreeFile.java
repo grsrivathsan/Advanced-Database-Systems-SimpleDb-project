@@ -196,7 +196,47 @@ public class BTreeFile implements DbFile {
 			Field f) 
 					throws DbException, TransactionAbortedException {
 		// some code goes here
-        return null;
+		if(pid.pgcateg() == BTreePageId.LEAF)
+			return (BTreeLeafPage) getPage(tid, dirtypages, pid, perm);
+		else if(pid.pgcateg() == BTreePageId.INTERNAL)
+		{
+			 BTreeInternalPage btInternal = (BTreeInternalPage)(getPage(tid, dirtypages, pid, Permissions.READ_ONLY));
+             Iterator<BTreeEntry> btInternalItr = btInternal.iterator();             
+             
+            // Iterator<BTreeEntry> btInternalItr1 = (Iterator<BTreeEntry>)(getPage(tid, dirtypages, pid, Permissions.READ_ONLY)).iterator();
+             
+             if (f != null) 
+             {
+            	     	 
+            	 BTreeEntry btInternalPg = btInternalItr.next();
+            	 while(true)
+            	 {
+            		 //BTreeEntry btInternalPg = btInternalItr.next();
+            		 if(f.compare(Op.LESS_THAN_OR_EQ,btInternalPg.getKey()))            		
+            			 return findLeafPage(tid, dirtypages, btInternalPg.getLeftChild(), perm, f);
+            		 if(!btInternalItr.hasNext()) 
+            			 break;
+            		 else 
+            			 btInternalPg = btInternalItr.next();
+            		 //if()
+            		 //else //if(f.compare(Op.GREATER_THAN,btInternalPg.getKey()))
+            			//return findLeafPage(tid, dirtypages, btInternalPg.getRightChild(), perm, f);
+            		// else 
+            			// return findLeafPage(tid, dirtypages, btInternalPg,perm,f);
+            	 }
+            	 return findLeafPage(tid, dirtypages, btInternalPg.getRightChild(), perm, f);
+            	 //return findLeafPage(tid, dirtypages, btInternalPg.getRightChild(), perm, f);
+             }
+            //If f is null traverse to the left subtree recursively till leaf node is reached
+             else if(f == null)
+             {
+            	 return findLeafPage(tid, dirtypages, btInternalItr.next().getLeftChild(), perm, f);
+             }
+				
+		}
+		
+		return null;
+		
 	}
 	
 	/**
