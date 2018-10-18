@@ -1,0 +1,19 @@
+Project 2 - Simple DB:
+=====================
+
+1) First In First Out Page eviction policy is implemented. We used HashMap and array list to get the dirty and clean pages respectively and evict the first entry whenever the buffer is full.
+
+
+
+
+Challenges faced:
+=================
+
+Implementation of deletion was challenging. And further, the individual test cases passed and system tests failed upon completion of insertion.
+Later upon discussing with TA, we identified that we missed to fill insertTuple and deleteTuple methods in buffer pool and failed to added parentpointer reference in splitInternal page.
+Fixing above shortcomings enabled the test cases to pass.
+
+Confusing parts:
+There is no explicit instruction in the document to fill insertTuple, deleteTuple or discard pages methods. Hence, we didn't fill that in the first instance, which caused the system test cases to fail. Later we found that these methods has to be completed.
+
+Time Taken: 4 days
