@@ -3,7 +3,7 @@ package simpledb;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Hashtable;
+
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -174,6 +174,34 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+    	ArrayList<Page> dirtyPages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
+        
+    	for(int i = 0;i < dirtyPages.size();i++)
+    	{
+    		PageId pageId = dirtyPages.get(i).getId();
+    		if(pageId_page.containsKey(pageId))
+    		{
+    			pageId_page.get(pageId).markDirty(true, tid);
+    			
+    		}
+    		else
+    		{
+    			if(pageId_page.size() == maxPages) evictPage();
+    			pageId_page.put(pageId, dirtyPages.get(i));
+    			pageId_page.get(pageId).markDirty(true, tid);
+    		}
+    		
+    	}
+    	
+    /*	DbFile f = Database.getCatalog().getDatabaseFile(tableId);
+        ArrayList<Page> dpList = f.insertTuple(tid, t);
+        // Now let's insert all dirty pages back to BufferPool
+        for (Page p : dpList) {
+            PageId pid = p.getId();
+            if (!pageId_page.containsKey(pid) && pageId_page.size() == maxPages) evictPage();
+            pageId_page.put(pid, p);
+            pageId_page.get(pid).markDirty(true, tid);
+        }*/
     }
 
     /**
@@ -193,6 +221,25 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+    	
+    	ArrayList<Page> dirtyPages = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t);
+      
+    	for(int i = 0;i < dirtyPages.size();i++)
+    	{
+    		PageId pageId = dirtyPages.get(i).getId();
+    		if(pageId_page.containsKey(pageId))
+    		{
+    			pageId_page.get(pageId).markDirty(true, tid);
+    			
+    		}
+    		else
+    		{
+    			if(pageId_page.size() == maxPages) evictPage();
+    			pageId_page.put(pageId, dirtyPages.get(i));
+    			pageId_page.get(pageId).markDirty(true, tid);
+    		}
+    	}
+      
     }
 
     /**
@@ -223,6 +270,8 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+    	pageId_page.remove(pid);
+    	
     }
 
     /**
@@ -267,14 +316,15 @@ public class BufferPool {
     		PageId removePid = cleanPge.get(0);
     		//Take the first inserted element in dirtyPages array (FIFO)
     		try {
-    			//for(int i = 0;i<dirtyPages.size();i++)
+    			//evict pages in fifo order
 				  flushPage(cleanPge.get(0));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
     		//remove the pages after flush operation
-    		pageId_page.remove(removePid);
+    		//pageId_page.remove(removePid);
+    		discardPage(removePid);
     		cleanPge.remove(removePid);
     	}
     	else
@@ -288,7 +338,8 @@ public class BufferPool {
 				e.printStackTrace();
 			}
     		
-    		pageId_page.remove(pageId_fifo.get(0));
+    		//pageId_page.remove(pageId_fifo.get(0));
+    		discardPage(pageId_fifo.get(0));
     		pageId_fifo.remove(0);
     		
     	}
