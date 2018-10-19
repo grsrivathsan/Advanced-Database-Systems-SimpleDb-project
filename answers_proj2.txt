@@ -1,16 +1,43 @@
 Project 2 - Simple DB:
 =====================
 
-1) First In First Out Page eviction policy is implemented. We used HashMap and array list to get the dirty and clean pages respectively and evict the first entry whenever the buffer is full.
+1) First In First Out Page eviction policy is implemented. We used HashMap and array list to get the dirty and clean pages respectively and evict the first entry whenever the buffer is full. (Since order of insertion will be maintained in hashmap and arraylist).
 
+2) Search operation: If the given btree page id is a leaf node, it directly returns the page referred by pid.
+	Else if field is not null, 
+	   if the field is less than or equal to the internal node referred by pid, recursively traverse left;
+	    else traverse right
+	else if field is null,
+         traverse recursively to the left;
 
+3) Insertion:
+	Leaf: Create a new node. Move half of the entries in left node to the new node (which is in right) and delete the entries upon insertion to the new leaf.
+	Ressign the forward and backward pointers accordingly. 
+	Create a new internal page with the entries of the new leaf node.
+	update the parent pointers
+	Return the current page or new leaf page depending upon depending upon whether the current field is greater than the field entry of page.
+	NonLeaf: Create a new internal node. Move the right half entries of the page to the new internal node.
+	upon insertion, delete the inserted key and its corresponding right key pointer of the old page.
+	set the left and right child pointers for the new internal node
+	update parent pointers
+4) Deletion:
 
+	leaf: move the tuples from the given sibiling to the page. (use iterator or reverseiterator depending upon isRightSibiling or not to traverse accordingly)
+	update key and child pointer entries
+	update parent entries
+	non-leaf: steal entries from left/ right sibiling and copy them to the given page
+	update the corresponding parent entries
+	Merge: Move all the right page keys to the left page and delete the right page.
+	delete the parent pointer to the right leaf page and update the parent pointer entries
+	
+	
+	
 
 Challenges faced:
 =================
 
 Implementation of deletion was challenging. And further, the individual test cases passed and system tests failed upon completion of insertion.
-Later upon discussing with TA, we identified that we missed to fill insertTuple and deleteTuple methods in buffer pool and failed to added parentpointer reference in splitInternal page.
+Later upon discussing with TA, we identified that we missed to fill insertTuple and deleteTuple methods in buffer pool and failed to added parentpointer reference.
 Fixing above shortcomings enabled the test cases to pass.
 
 Confusing parts:
