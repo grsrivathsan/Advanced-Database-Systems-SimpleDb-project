@@ -108,6 +108,11 @@ public class HeapFile implements DbFile {
     public void writePage(Page page) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
+    	RandomAccessFile racf = new RandomAccessFile(f,"rw");
+    	int offset = BufferPool.getPageSize() * page.getId().pageNumber();
+    	racf.seek(offset);
+    	racf.write(page.getPageData(), 0, BufferPool.getPageSize());
+    	racf.close();
     }
 
     /**
@@ -123,7 +128,31 @@ public class HeapFile implements DbFile {
     public ArrayList<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        return null;
+    	if(!(t.getTupleDesc().equals(td)))
+    		throw new DbException("TupleDesc does not match");
+    	HeapPage hPage = null;
+    	HeapPageId hPageId = null;
+    	int pageNo = 0;
+    	for(pageNo = 0;pageNo < numPages(); pageNo++)
+    	{
+    		hPageId = new HeapPageId(getId(), pageNo);
+    		hPage = (HeapPage)Database.getBufferPool().getPage(tid, hPageId, Permissions.READ_WRITE);
+    		if(hPage.getNumEmptySlots() > 0) break;
+    		Database.getBufferPool().releasePage(tid, hPage.getId());
+    	}
+    	
+    	if(pageNo == numPages())
+    	{
+    		hPageId = new HeapPageId(getId(),pageNo);
+    		hPage = new HeapPage(hPageId,HeapPage.createEmptyPageData());
+    		writePage(hPage); //writes to disk
+    		hPage = (HeapPage)Database.getBufferPool().getPage(tid, hPageId, Permissions.READ_WRITE);
+    	}
+    	hPage.insertTuple(t);
+    	ArrayList<Page> pageList = new ArrayList<Page>();
+    	pageList.add(hPage);
+    	return pageList;
+        //return null;
         // not necessary for lab1|lab2
     }
 
@@ -131,7 +160,17 @@ public class HeapFile implements DbFile {
     public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
         // some code goes here
-        return null;
+    	
+    	int pageNo = t.getRecordId().getPageId().pageNumber();
+        if (pageNo < 0 || pageNo >= numPages()) 
+        	throw new DbException("Page out of range");
+        PageId hPageId = t.getRecordId().getPageId();
+    	HeapPage hPage = (HeapPage)(Database.getBufferPool()).getPage(tid, hPageId, Permissions.READ_WRITE);
+        hPage.deleteTuple(t);
+        ArrayList<Page> pageList = new ArrayList<Page>();
+        pageList.add(hPage);
+        return pageList;
+        //return null;
         // not necessary for lab1|lab2
     }
     
