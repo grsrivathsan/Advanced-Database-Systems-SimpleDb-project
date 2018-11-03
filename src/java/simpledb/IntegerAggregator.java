@@ -73,6 +73,14 @@ public class IntegerAggregator implements Aggregator {
     	int currentValue = aggData.get(tupleGroupByField);
     	int currentCount = count.get(tupleGroupByField);
     	int newValue = currentValue;
+    	/*if(what.equals(simpledb.Aggregator.Op.AVG))
+    		
+    	else if(what.equals(simpledb.Aggregator.Op.AVG))
+    		
+    	else if(what.equals(simpledb.Aggregator.Op.AVG))
+    		
+    	else if(what.equals(simpledb.Aggregator.Op.AVG)*/
+    			
     	switch(what)
     	{
     		case MIN: 
@@ -81,7 +89,8 @@ public class IntegerAggregator implements Aggregator {
     		case MAX:
     			newValue = (tupleValue < currentValue) ? currentValue : tupleValue;
     			break;
-    		case SUM: case AVG:
+    		case SUM: 
+    		case AVG:
     			count.put(tupleGroupByField, currentCount+1);
     			newValue = tupleValue + currentValue;
     			break;
@@ -121,7 +130,7 @@ public class IntegerAggregator implements Aggregator {
     		type[0] = Type.INT_TYPE;
     		tupledesc = new TupleDesc(type);
     	}
-    	//Tuple addMe;
+    	
     	for (Field group : aggData.keySet())
     	{
     		int aggregateVal;
