@@ -9,7 +9,9 @@ import java.io.IOException;
 public class Delete extends Operator {
 
     private static final long serialVersionUID = 1L;
-
+    private TransactionId t;
+    private DbIterator child;
+    private boolean flag = false;
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
@@ -21,23 +23,37 @@ public class Delete extends Operator {
      */
     public Delete(TransactionId t, DbIterator child) {
         // some code goes here
+    	this.t = t;
+    	this.child = child;
     }
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+    	Type[] t = new Type[1];
+    	t[0] = Type.INT_TYPE;
+    	TupleDesc tdesc = new TupleDesc(t);
+        return tdesc;
     }
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+    	if(child == null) throw new DbException("Child NULL");
+    	child.open();
+    	super.open();
+    	flag = false;
     }
 
     public void close() {
         // some code goes here
+    	super.close();
+    	child.close();
+    	flag = false;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
+    	child.rewind();
+    	flag = false;
     }
 
     /**
@@ -51,18 +67,41 @@ public class Delete extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+    	int deleteCount = 0;
+    	if(flag || child == null)
+    		return null;
+    	while(child.hasNext())
+    	{
+    		Tuple dt = child.next();
+    		try {
+				Database.getBufferPool().deleteTuple(t, dt);
+				deleteCount = deleteCount + 1;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    		
+    	}
+    	
+    	Tuple tuple = new Tuple(getTupleDesc());
+    	flag = true;
+    	tuple.setField(0,new IntField(deleteCount));
+        return tuple;
     }
 
     @Override
     public DbIterator[] getChildren() {
         // some code goes here
-        return null;
+    	DbIterator[] children = new DbIterator[1];
+    	children[0] = child;
+    	return children;
+        //return null;
     }
 
     @Override
     public void setChildren(DbIterator[] children) {
         // some code goes here
+    	child = children[0];
     }
 
 }
