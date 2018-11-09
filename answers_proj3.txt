@@ -1,0 +1,40 @@
+Project 3 - Simple DB:
+=====================
+
+Predicate: filter method: use getField method to get the value of the ith field of the tuple t and compare it with the 
+constructor operand field. compare method of field is used to compare the tuple values.
+Filter: Initialize constructor with predicate and DbIterator instance. For fetchNext(), iterate over the tuples and 
+check if the predicate matches for each tuple. Return the tuple those pass the predicate.
+for getChildren(), create a DbIterator array and initialize with DbIterator instance.
+Join: Receive the DbIterator instances child1 and child2 to iterate the tuples to be joined using the join predicate
+Create new tuples t1 and t2 as place holder for tuples for each iteration of child1 and child2 DbIterator instances.
+iterate till the tuples are matched by the join predicate. join the matching tuples and return the result tuple	
+For aggregates, initialize constructor with groupByField, groupByType, aggreage field and aggregate operator to use (only count)
+In Iterator module, if NO_Grouping, then initialize tupledesc with groupVal, else if grouping is present initialize it with (groupVal,aggregatorVal)
+ create a tuple variable and initialize with tupledesc obtained above. depending upon the presence of grouping, set the tuple fields accordingly.
+ create an arraylist of tuple type. Add the corresponding tuples obtained in the above step into the arraylist.
+ return tupleIterator initialized with tupledesc and arraylist of tuples.
+
+HeapPage/File:
+delete- check whether the HeapPageId is matching with the given tuple page id. If not, then tuple is unavailable in this page. throw exception
+check whether the given tupleNo is within the numslots. if not tupleNo is invalid. throw exception.
+check whether the tupleNo slot of given tuple is already empty. if yes, then slot is already empty. deletion can't be done.
+If all the above checks are surpassed, particular tupleNo in tuples array to null. 
+mark the slot used as false.
+insert - check whether the tupledesc of given tuple matches with the tupledesc of table. if not, then tuple desc doesn't mathc.throw exception
+If no of empty slots is nil. then tuple can't be inserted. throw exception.
+if above checks are surpassed, find an unused slot. insert the tuple and mark the slot as used. 
+
+Insert/Delete tuple:
+ check if the DbIterator is not null. If yes, iterate the DbIterator instance and insert the tuple with the corresponding tableId and transactionId 
+using getBufferPool.inserttuple method.keep a count of number of tuples inserted. return the new tuple initialized with number of insertions.
+ check if the DbIterator is not null. If yes, iterate the DbIterator instance and insert the tuple with the corresponding transactionId 
+using getBufferPool.deletetuple method.keep a count of number of tuples deleted. return the new tuple initialized with number of deletions.
+
+
+Challenges faced:
+=================
+
+Implementation of Aggregators and joins were challenging.
+
+Time Taken: 4 days
