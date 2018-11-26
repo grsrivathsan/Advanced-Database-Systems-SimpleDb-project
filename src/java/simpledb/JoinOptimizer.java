@@ -67,8 +67,11 @@ public class JoinOptimizer {
         }
 
         JoinPredicate p = new JoinPredicate(t1id, lj.p, t2id);
-
-        j = new Join(p,plan1,plan2);
+        
+        if (lj.p == Predicate.Op.EQUALS)
+            j = new HashEquiJoin(p, plan1, plan2);
+       else
+            j = new Join(p,plan1,plan2);
 
         return j;
 
@@ -110,7 +113,8 @@ public class JoinOptimizer {
             // Insert your code here.
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
-            // nested-loops join.
+            // nested-loops join.        	
+        	
         	double jc = cost1 + (card1 * cost2) + (card1 * card2); 
             return jc;
         }
