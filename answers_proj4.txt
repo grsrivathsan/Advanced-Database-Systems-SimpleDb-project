@@ -1,0 +1,27 @@
+Project 3 - Simple DB:
+=====================
+
+Query optimization
+
+IntHistogram: Here equiwidth bucket is used to record table statistics for selectivity estimation. An array of integers is used with the count of how many values fall into each bucket. Boundary conditions for highest and lowest bound such as bucketIndex < 0 || (bucketIndex >= this.numBuckets, the index is appropriately assigned to max or min values accordingly to avoid index out of bound.
+
+Table Stats:
+Initialize tablestats constructor with tableid, iocostperpage and numTuples values. Create two hashmaps for intHistogram and StringHistogram respectively. Populate min and max values.
+Initialize the histograms
+Estimatecost -  estimate the cost as numPages (which we get from heapfile) * iocostperpage;
+estimateTableCardinality as selectivity factor * numTuples;
+estimateSelectivity - If the field is INT type, retrive the histogram values from inthistogram hashmap, use this value to estimate selectivituy
+If the field is String type, retrive the histogram values from stringHistogram hashmap, pass this values as parameter to histogram.estimateSelectivity
+For totalTuples() - return the numTuples variable that keeps records of the total number of tuples in this table.
+
+JoinOptimizer: estimateJoinCost as cost of full scan of table1 + (cardinality of table1  * cost of full scan of table 2) + (cardinality of table1  * cardinality of table2)
+estimateTableJoinCardinality: If both table1 and table2 have primary key, take card as 1, else if only table1 has pkey, then take cardinality of table2 as card, else take cardinality of table1. 
+Else if the operator is neither equals not notEquals, then
+estimate the card = (0.3 * card1 * card2);
+For joinOrdering, the provided algorithm in the lab instructions has been executed.
+
+Challenges faced:
+=================
+Initially the QueryTest systemtest failed stating it exceeded 20000ms. TA suggested optimizations in HeapFile.java and JoinOptimizer.java. On implementing those modification, all the test cases passed successfully.
+
+Time Taken: 4 days
