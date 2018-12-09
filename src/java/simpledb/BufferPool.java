@@ -3,6 +3,10 @@ package simpledb;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -31,8 +35,9 @@ public class BufferPool {
     //Since pageID,Page combination is Unique we are using HashTable
    // public Hashtable<PageId, Page> pageId_page;
     public HashMap<PageId, Page> pageId_page;
-    
+    private LockManager lm;
     public ArrayList<PageId> pageId_fifo;
+ 
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -48,6 +53,7 @@ public class BufferPool {
     	maxPages = numPages;
     	//for maintaining fifo order during page eviction
     	pageId_fifo = new ArrayList<PageId>();
+    	lm = new LockManager();
     	
     }
     
@@ -95,6 +101,8 @@ public class BufferPool {
     		{		
     		    page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
     		    pageId_page.put(pid, page);
+    		    //
+    		    page.setBeforeImage();
     		    //pageId_fifo.add(pid);
     		}
     		else
@@ -103,11 +111,16 @@ public class BufferPool {
     			page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
     			evictPage();
     			pageId_page.put(pid, page);
+    			//
+    			page.setBeforeImage();
     		    //pageId_fifo.add(pid);
     			//throw new DbException("Buffer pool reached its max size of "+DEFAULT_PAGES);
     		}
     	}
-    	
+    	//
+    	//System.out.println("Tid in BufferPool:"+tid);
+    	//if(tid != null)
+    	  lm.acquireLock(tid, pid, perm);
         return page;
     }
 
@@ -123,6 +136,7 @@ public class BufferPool {
     public  void releasePage(TransactionId tid, PageId pid) {
         // some code goes here
         // not necessary for lab1|lab2|lab3|lab4
+    	lm.releaseLock(tid, pid);
     }
 
     /**
@@ -133,13 +147,18 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2|lab3|lab4
+    	this.transactionComplete(tid,true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
     public boolean holdsLock(TransactionId tid, PageId p) {
         // some code goes here
         // not necessary for lab1|lab2|lab3|lab4
-        return false;
+    	if (lm.holdsLock(tid, p))
+    		return true;
+    	else
+    		return false;
+        //return false;
     }
 
     /**
@@ -150,9 +169,47 @@ public class BufferPool {
      * @param commit a flag indicating whether we should commit or abort
      */
     public void transactionComplete(TransactionId tid, boolean commit)
-        throws IOException {
+        throws IOException 
+    {
         // some code goes here
         // not necessary for lab1|lab2|lab3|lab4
+    	if(lm.getPages(tid)==null) 
+    		return;
+    	Iterator<PageId> itr = lm.getPages(tid);
+    	if(!commit)
+    	{
+    		while(itr.hasNext())
+    		{
+    			PageId pageid = itr.next();
+    			if(pageId_page.containsKey(pageid))
+    			{
+    				Page page = pageId_page.get(pageid);
+    				if(page.isDirty()!= null && page.isDirty().equals(tid))
+    				{
+    					pageId_page.put(pageid, page.getBeforeImage());
+    				}
+    					
+    					
+    			}
+    		}
+    	}
+    	else if(commit)
+    	{
+    		//flush each page to disk
+    		while(itr.hasNext())
+    		{
+    			PageId pageid = itr.next();
+    			Page page = pageId_page.get(pageid);
+    			if(page != null)
+    			{
+    				flushPage(pageid);
+    				pageId_page.get(pageid).setBeforeImage();
+    			}
+    		}
+    	}
+    	//Finally release all locks associated with the transaction
+    	lm.releaseAllLocks(tid);
+    	
     }
 
     /**
@@ -192,16 +249,7 @@ public class BufferPool {
     		}
     		
     	}
-    	
-    /*	DbFile f = Database.getCatalog().getDatabaseFile(tableId);
-        ArrayList<Page> dpList = f.insertTuple(tid, t);
-        // Now let's insert all dirty pages back to BufferPool
-        for (Page p : dpList) {
-            PageId pid = p.getId();
-            if (!pageId_page.containsKey(pid) && pageId_page.size() == maxPages) evictPage();
-            pageId_page.put(pid, p);
-            pageId_page.get(pid).markDirty(true, tid);
-        }*/
+   
     }
 
     /**
@@ -282,8 +330,13 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
     	Page p = pageId_page.get(pid);
-    	Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(p);
-    	p.markDirty(false, null);
+    	if(p != null)
+    	{
+    		
+        	Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(p);
+        	p.markDirty(false, null);
+    	}
+    	 
     	
     }
 
@@ -292,6 +345,14 @@ public class BufferPool {
     public synchronized  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2|lab3|lab4
+    	Iterator<PageId> itr = lm.getPages(tid);
+    	
+    	while(itr.hasNext())
+    	{
+    		PageId pid = itr.next();
+    		 //System.out.println("BP - flushPages - pid:"+pid);
+    		flushPage(pid);
+    	}
     }
 
     /**
@@ -329,9 +390,15 @@ public class BufferPool {
     	}
     	else
     	{
+    		//If no clean pages or all the pages are dirty, throw dbException
+    		//Implementation of NO STEAL
+    		throw new DbException("All pages are dirty");
+    		
+    		
+    		
     		//If there are no clean pages, then evict the first in clean page thats not used
     		//System.out.println("no dirty pages");
-    		try {
+    	/*	try {
 				flushPage(pageId_fifo.get(0));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -340,11 +407,268 @@ public class BufferPool {
     		
     		//pageId_page.remove(pageId_fifo.get(0));
     		discardPage(pageId_fifo.get(0));
-    		pageId_fifo.remove(0);
+    		pageId_fifo.remove(0);*/
     		
     	}
     
     
     }
 
+}
+
+class LockManager {
+	
+
+
+	private ConcurrentHashMap<PageId, Object> locks;
+	private ConcurrentHashMap<PageId, HashSet<TransactionId>> sharedLocks;
+	private ConcurrentHashMap<PageId, TransactionId> exclusiveLocks;
+	private ConcurrentHashMap<TransactionId, HashSet<PageId>> transactIdPageIdMap;
+	public ConcurrentHashMap<TransactionId, HashSet<TransactionId>> dependencyMap;
+	private static TransactionId NO_LOCK = new TransactionId();
+	
+
+	public LockManager() {
+		this.locks = new ConcurrentHashMap<PageId, Object>();
+		this.sharedLocks = new ConcurrentHashMap<PageId, HashSet<TransactionId>>();
+		this.exclusiveLocks = new ConcurrentHashMap<PageId, TransactionId>();
+		this.transactIdPageIdMap = new ConcurrentHashMap<TransactionId, HashSet<PageId>>();
+		this.dependencyMap = new ConcurrentHashMap<TransactionId, HashSet<TransactionId>>();
+	}
+
+	private Object getLock(PageId pid) {
+		
+		if(locks.containsKey(pid))
+		{
+			return locks.get(pid);
+		}
+
+		else 
+		{
+			this.locks.put(pid, new Object());
+			this.sharedLocks.put(pid, new HashSet<TransactionId>());
+			this.exclusiveLocks.put(pid, NO_LOCK);
+			return this.locks.get(pid);
+		}
+
+		//return this.locks.get(pid);
+	}
+
+
+	private boolean detechCycles(TransactionId tid) {
+		HashSet<TransactionId> visited = new HashSet<TransactionId>();
+		LinkedList<TransactionId> queue = new LinkedList<TransactionId>();
+
+		queue.add(tid);
+
+		while (!(queue.isEmpty())) {
+			TransactionId cur = queue.remove();
+			if (visited.contains(cur)) {
+				return true;
+			}
+
+			visited.add(cur);
+
+			if (this.dependencyMap.containsKey(cur) && !(this.dependencyMap.get(cur).isEmpty())) {
+				Iterator<TransactionId> it = this.dependencyMap.get(cur).iterator();
+				while (it.hasNext()) {
+					queue.add(it.next());
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public void acquireLock(TransactionId tid, PageId pid, Permissions p)
+		throws TransactionAbortedException {
+		//System.out.println("Tid:"+tid);
+		if (!(this.dependencyMap.containsKey(tid))) {
+			this.dependencyMap.put(tid, new HashSet<TransactionId>());
+		}
+
+		Object lock = this.getLock(pid);
+		if ((p == Permissions.READ_ONLY) && !(this.sharedLocks.get(pid).contains(tid))) 
+		{
+			while (true) 
+			{
+				synchronized(lock) 
+				{
+					if ((this.exclusiveLocks.get(pid).equals(tid)) || (this.exclusiveLocks.get(pid).equals(NO_LOCK))) 
+					{
+						synchronized(this.sharedLocks.get(pid)) 
+						{
+							this.sharedLocks.get(pid).add(tid);
+						}
+
+						synchronized(this.dependencyMap) 
+						{
+							this.dependencyMap.remove(tid);
+						}
+
+						break;
+					}
+
+			
+					synchronized(this.dependencyMap) 
+					{
+						if (this.dependencyMap.get(tid).add(this.exclusiveLocks.get(pid))) 
+						{
+							if (this.detechCycles(tid)) 
+							{
+								throw new TransactionAbortedException();
+							}
+						}
+					}
+				}
+			}
+		} 
+		else if ((p == Permissions.READ_WRITE) && !(this.exclusiveLocks.get(pid).equals(tid))) 
+		{
+			while (true) 
+			{
+				synchronized(lock) 
+				{
+					
+					HashSet<TransactionId> deps = new HashSet<TransactionId>();
+					if (!(this.exclusiveLocks.get(pid).equals(NO_LOCK))) 
+					{
+						deps.add(this.exclusiveLocks.get(pid));
+					}
+
+					synchronized(this.sharedLocks.get(pid)) 
+					{
+						Iterator<TransactionId> it = this.sharedLocks.get(pid).iterator();
+						while (it.hasNext()) 
+						{
+							TransactionId t = it.next();
+							if (!(t.equals(tid))) 
+							{
+								deps.add(t);
+							}
+						}
+					}
+
+			
+					if (deps.isEmpty())
+					{
+					
+						synchronized(this.sharedLocks.get(pid)) 
+						{
+							this.sharedLocks.get(pid).remove(tid);
+						}
+
+						this.exclusiveLocks.put(pid, tid);
+
+						synchronized(this.dependencyMap) 
+						{
+							this.dependencyMap.remove(tid);
+						}
+
+						break;
+					}
+
+				
+					synchronized(this.dependencyMap) 
+					{
+						if (this.dependencyMap.get(tid).add(this.exclusiveLocks.get(pid)) || this.dependencyMap.get(tid).addAll(deps)) 
+						{
+	
+							if (this.detechCycles(tid)) 
+							{
+								throw new TransactionAbortedException();
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if (!(this.transactIdPageIdMap.containsKey(tid))) {
+			this.transactIdPageIdMap.put(tid, new HashSet<PageId>());
+		}
+		
+		synchronized(this.transactIdPageIdMap.get(tid)) {
+			this.transactIdPageIdMap.get(tid).add(pid);
+		}
+	}
+	
+	//
+
+	public void releaseLock(TransactionId tid, PageId pid) 
+	{
+		if (!(this.transactIdPageIdMap.containsKey(tid))) 
+		{
+			return;
+		}
+
+		Object lock = this.getLock(pid);
+		synchronized(lock) 
+		{
+			if (this.exclusiveLocks.get(pid).equals(tid)) 
+			{
+				this.exclusiveLocks.put(pid, NO_LOCK);
+			}
+	
+			synchronized(this.sharedLocks.get(pid)) 
+			{
+				this.sharedLocks.get(pid).remove(tid);
+			}
+		}
+
+		synchronized(this.transactIdPageIdMap.get(tid)) 
+		{
+			this.transactIdPageIdMap.get(tid).remove(pid);
+		}
+	}
+
+	public void releaseAllLocks(TransactionId tid) 
+	{
+		if (!(this.transactIdPageIdMap.containsKey(tid))) 
+		{
+			return;
+		}
+
+		Iterator<PageId> it = this.getPages(tid);
+		while (it.hasNext()) 
+		{
+			PageId pid = it.next();
+
+			Object lock = this.getLock(pid);
+			synchronized(lock) {
+				if (this.exclusiveLocks.get(pid).equals(tid)) {
+					this.exclusiveLocks.put(pid, NO_LOCK);
+				}
+	
+				synchronized(this.sharedLocks.get(pid)) 
+				{
+					this.sharedLocks.get(pid).remove(tid);
+				}
+			}
+		}
+
+		this.transactIdPageIdMap.remove(tid);
+	}
+
+	public Iterator<PageId> getPages(TransactionId tid) {
+		if (!(this.transactIdPageIdMap.containsKey(tid))) {
+			return null;
+		}
+
+		return this.transactIdPageIdMap.get(tid).iterator();
+	}
+
+	public boolean holdsLock(TransactionId tid, PageId pid) 
+	{
+		if (!(this.transactIdPageIdMap.containsKey(tid))) 
+		{
+			return false;
+		}
+
+		synchronized(this.transactIdPageIdMap.get(tid)) 
+		{
+		
+			return this.transactIdPageIdMap.get(tid).contains(pid);
+		}
+	}
 }
