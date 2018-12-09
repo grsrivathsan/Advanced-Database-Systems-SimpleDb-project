@@ -1,0 +1,35 @@
+Project 5 - Simple DB:
+=====================
+
+Transactions:
+
+=> Included the functionality to acquired a lock in bufferpool.getPage() whenever a request to the page is made. The type of lock (Shared or exclusive) depends upon the permission associated with getPage()
+=> releasePage(), releases a lock acquired  the corresponding pageid and transaction id
+=> transactionComplete(tid), will inturn call for transactionComplete(tid,true). Calling this without commit argument will always commit the transaction.
+=> transactionComplete(tid,commit), 
+the transaction gets committed if commit is true and the pages are flushed to disk.
+If the commit is false, the corresponding transaction is aborted.
+=> holdsLock function returs true if the transaction has acquired any lock.
+
+=> NO STEAL policy is enforced in evictPage() function.
+when the buffer is full, evict the pages that aren't dirty.
+else if there are no dirty pages, throw DbException("All pages are dirty").
+
+=> A new class has been introduced to manage functions related to Locks. locks are managed at Page level granularity.
+=> the function getlock returns the lockObject if the pid has already acquired it, else it acquires a sharedlock and returns the lock object
+=> cycles are detected to identify deadlock. If the same tid is visited twice forming a loop then a deadlock cycle is identified.
+=> Locks are acquired using acquirelock function.
+   if the permission is READ only, then shared lock is acquired and checked for deadlock before return.
+   if the permisson is READ_Write, then exclusive lock is acquired or upgraded from sharedlock if the transaction is already having one.
+   if deadlock is detected throw TransactionAbortException().
+=> ReleaseLock function releases all the locks acquired by the transaction.
+
+Challenges faced:
+================
+Encountered NULL pointer exceptions in bufferpool and heapfile instances. Later, discovered that null pointer is due to the tid being null at some instances. This has happened since database file iterator has been newly declared everytime when the open() method is called in SeqScan function, causing duplicates.
+This has been resolved finally.
+
+All the system and unit tests are passing successfully.
+
+
+Time Taken: 8 hours
