@@ -3,12 +3,14 @@ Project 5 - Simple DB:
 
 Transactions:
 
-=> Included the functionality to acquired a lock in bufferpool.getPage() whenever a request to the page is made. The type of lock (Shared or exclusive) depends upon the permission associated with getPage()
+=> Included the functionality to acquired a lock in bufferpool.getPage() whenever a request to the page is made. 
+   The type of lock (Shared or exclusive) depends upon the permission associated with getPage()
 => releasePage(), releases a lock acquired  the corresponding pageid and transaction id
-=> transactionComplete(tid), will inturn call for transactionComplete(tid,true). Calling this without commit argument will always commit the transaction.
+=> transactionComplete(tid), will inturn call for transactionComplete(tid,true). 
+    Calling this without commit argument will always commit the transaction.
 => transactionComplete(tid,commit), 
-the transaction gets committed if commit is true and the pages are flushed to disk.
-If the commit is false, the corresponding transaction is aborted.
+   the transaction gets committed if commit is true and the pages are flushed to disk.
+   If the commit is false, the corresponding transaction is aborted.
 => holdsLock function returs true if the transaction has acquired any lock.
 
 => NO STEAL policy is enforced in evictPage() function.
