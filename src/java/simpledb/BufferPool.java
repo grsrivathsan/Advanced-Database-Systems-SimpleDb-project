@@ -416,19 +416,18 @@ public class BufferPool {
 
 }
 
-class LockManager {
-	
-
-
+class LockManager 
+{
 	private ConcurrentHashMap<PageId, Object> locks;
 	private ConcurrentHashMap<PageId, HashSet<TransactionId>> sharedLocks;
 	private ConcurrentHashMap<PageId, TransactionId> exclusiveLocks;
 	private ConcurrentHashMap<TransactionId, HashSet<PageId>> transactIdPageIdMap;
 	public ConcurrentHashMap<TransactionId, HashSet<TransactionId>> dependencyMap;
-	private static TransactionId NO_LOCK = new TransactionId();
-	
+	private static TransactionId NO_LOCK = new TransactionId();	
 
-	public LockManager() {
+	public LockManager() 
+	{
+		//Initialize variables
 		this.locks = new ConcurrentHashMap<PageId, Object>();
 		this.sharedLocks = new ConcurrentHashMap<PageId, HashSet<TransactionId>>();
 		this.exclusiveLocks = new ConcurrentHashMap<PageId, TransactionId>();
@@ -451,7 +450,6 @@ class LockManager {
 			return this.locks.get(pid);
 		}
 
-		//return this.locks.get(pid);
 	}
 
 
