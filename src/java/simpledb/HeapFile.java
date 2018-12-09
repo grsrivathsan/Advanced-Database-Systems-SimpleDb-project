@@ -172,10 +172,7 @@ public class HeapFile implements DbFile {
         // XXX: Would it not be better to scan from numPages() to 0 since the
         // last pages are more likely to have empty slots?
         for (; i < numPages(); i++) {
-            Debug.log(
-                    4,
-                    "HeapFile.addTuple: checking free slots on page %d of table %d",
-                    i, tableid);
+            Debug.log(4,"HeapFile.addTuple: checking free slots on page %d of table %d",i, tableid);
             HeapPageId pid = new HeapPageId(tableid, i);
             // </strip>
             // <silentstrip lab1|lab2|lab3|lab4|lab5>
@@ -192,10 +189,7 @@ public class HeapFile implements DbFile {
             // think about why we have to invoke releasePage here.
             // can you think of ways where
             if (p.getNumEmptySlots() == 0) {
-                Debug.log(
-                        4,
-                        "HeapFile.addTuple: no free slots on page %d of table %d",
-                        i, tableid);
+                Debug.log(4,"HeapFile.addTuple: no free slots on page %d of table %d",i, tableid);
                 // </silentstrip>
 
                 // <silentstrip lab1|lab2|lab3|lab4|lab5>
@@ -214,8 +208,7 @@ public class HeapFile implements DbFile {
                 }
                 continue;
             }
-            Debug.log(4, "HeapFile.addTuple: %d free slots in table %d",
-                    p.getNumEmptySlots(), tableid);
+            Debug.log(4, "HeapFile.addTuple: %d free slots in table %d",p.getNumEmptySlots(), tableid);
             p.insertTuple(t);
             lastEmptyPage = p.getId().pageNumber();
             // System.out.println("nfetches = " + nfetches);
@@ -232,8 +225,7 @@ public class HeapFile implements DbFile {
         // data with an empty
         // page, losing the new data.
         synchronized (this) {
-            BufferedOutputStream bw = new BufferedOutputStream(
-                    new FileOutputStream(f, true));
+            BufferedOutputStream bw = new BufferedOutputStream(new FileOutputStream(f, true));
             byte[] emptyData = HeapPage.createEmptyPageData();
             bw.write(emptyData);
             bw.close();
@@ -244,8 +236,7 @@ public class HeapFile implements DbFile {
         // we just created---which is ok, we haven't yet added the tuple.
         // we just need to lock the page before we can add the tuple to it.
 
-        HeapPage p = (HeapPage) Database.getBufferPool()
-                .getPage(tid, new HeapPageId(tableid, numPages() - 1),
+        HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(tableid, numPages() - 1),
                         Permissions.READ_WRITE);
         p.insertTuple(t);
         lastEmptyPage = p.getId().pageNumber();
@@ -285,6 +276,7 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public DbFileIterator iterator(TransactionId tid) {
         // <strip lab1>
+    	//System.out.println("HeapFile DbFileIterator tid1:"+tid);
         return new HeapFileIterator(this, tid);
         // </strip>
         // <insert lab1>
@@ -323,6 +315,8 @@ class HeapFileIterator extends AbstractDbFileIterator {
         while (it == null && curpgno < hf.numPages() - 1) {
             curpgno++;
             HeapPageId curpid = new HeapPageId(hf.getId(), curpgno);
+             //System.out.println("Tid in HeapFile:"+tid);
+             
             HeapPage curp = (HeapPage) Database.getBufferPool().getPage(tid,
                     curpid, Permissions.READ_ONLY);
             it = curp.iterator();

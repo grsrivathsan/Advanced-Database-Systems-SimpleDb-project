@@ -36,6 +36,7 @@ public class SeqScan implements DbIterator {
     	this.tableid = tableid;
     	this.tableAlias = tableAlias;
     	//this.tid = tid;
+    	//System.out.println("SeqScan Constructor tid:"+tid);
     	dbItr = Database.getCatalog().getDatabaseFile(tableid).iterator(tid);
     }
 
@@ -82,7 +83,7 @@ public class SeqScan implements DbIterator {
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
-    	dbItr = Database.getCatalog().getDatabaseFile(tableid).iterator(tid);
+    	//dbItr = Database.getCatalog().getDatabaseFile(tableid).iterator(tid);
     	dbItr.open();
     	
     	
